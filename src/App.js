@@ -8,9 +8,7 @@ import {
   Trash2,
   Calendar,
   Users,
-  User,
   Clock,
-  LogOut,
   LayoutDashboard,
   Download,
   RefreshCw,
@@ -99,10 +97,10 @@ const InputField = ({ label, value, onChange, type = "text", placeholder, option
 
 const initialData = {
   classInfo: {
-    className: '',
+    department: '',
+    year: '',
     ccName: '',
     totalStudents: '',
-    semester: ''
   },
   date: new Date().toISOString().split('T')[0],
   students: [
@@ -124,10 +122,14 @@ export default function App() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [showAdminPrompt, setShowAdminPrompt] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [callingRecords, setCallingRecords] = useState([]);
+  const [newCall, setNewCall] = useState({ studentRollNo: '', date: new Date().toISOString().split('T')[0], contact: '', reason: '', notes: '' });
 
-  // Classes list
-  const classList = ['SE - Comp', 'SE - IT', 'SE - Extc', 'TE - Comp', 'TE - IT', 'TE - Extc', 'BE - Comp', 'BE - IT', 'BE - Extc'];
-  const semesterList = ['Sem I', 'Sem II', 'Sem III', 'Sem IV', 'Sem V', 'Sem VI', 'Sem VII', 'Sem VIII'];
+  // Departments and Classes
+  const departments = ['CE', 'CO-A', 'CO-B', 'EE', 'EJ', 'IF'];
+  const years = ['1st Year', '2nd Year', '3rd Year'];
+  const absenceReasons = ['Medical', 'Leave', 'Family Emergency', 'Other', 'Not Specified'];
 
   // 1. Auth Setup
   useEffect(() => {
@@ -299,6 +301,8 @@ export default function App() {
   const sections = [
     { id: 'class', title: 'Class Information', icon: Users },
     { id: 'attendance', title: 'Mark Attendance', icon: Calendar },
+    { id: 'calling', title: 'Calling Records', icon: Clock },
+    { id: 'reports', title: 'Daily Reports & Analysis', icon: Download },
   ];
 
   const renderContent = () => {
@@ -308,10 +312,10 @@ export default function App() {
           <div className="space-y-6">
             <SectionHeader title="Class Information" icon={Users} description="Enter class and CC details." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField label="Class Name" type="select" options={classList} value={data.classInfo.className} onChange={(v) => updateClassInfo('className', v)} />
+              <InputField label="Department" type="select" options={departments} value={data.classInfo.department} onChange={(v) => updateClassInfo('department', v)} />
+              <InputField label="Year" type="select" options={years} value={data.classInfo.year} onChange={(v) => updateClassInfo('year', v)} />
               <InputField label="Class Coordinator" value={data.classInfo.ccName} onChange={(v) => updateClassInfo('ccName', v)} placeholder="e.g. Dr. Smith" />
-              <InputField label="Total Students" type="number" value={data.classInfo.totalStudents} onChange={(v) => updateClassInfo('totalStudents', v)} />
-              <InputField label="Semester" type="select" options={semesterList} value={data.classInfo.semester} onChange={(v) => updateClassInfo('semester', v)} />
+              <InputField label="Total Strength" type="number" value={data.classInfo.totalStudents} onChange={(v) => updateClassInfo('totalStudents', v)} />
             </div>
           </div>
         );
@@ -349,7 +353,7 @@ export default function App() {
 
             <div className="mt-8 p-8 bg-slate-900 text-white rounded-xl text-center shadow-xl">
               <h3 className="text-2xl font-bold mb-2">Ready to Submit</h3>
-              <p className="text-slate-300 mb-6">Submit the attendance record for {data.classInfo.className || 'your class'} on {data.date}.</p>
+              <p className="text-slate-300 mb-6">Submit the attendance record for {data.classInfo.department || 'your class'} on {data.date}.</p>
 
               <div className="flex flex-col md:flex-row gap-4 justify-center">
                 <button
@@ -374,89 +378,282 @@ export default function App() {
           </div>
         );
 
+      case 2: // Calling Records
+        return (
+          <div className="space-y-6">
+            <SectionHeader title="Calling Records" icon={Clock} description="Record student calls and reasons for absence." />
+            
+            <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+              <h4 className="font-bold text-blue-900 mb-4">Add New Call Record</h4>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <InputField label="Roll No" value={newCall.studentRollNo} onChange={(v) => setNewCall({...newCall, studentRollNo: v})} placeholder="e.g. 01" />
+                <InputField label="Date" type="date" value={newCall.date} onChange={(v) => setNewCall({...newCall, date: v})} />
+                <InputField label="Contact" value={newCall.contact} onChange={(v) => setNewCall({...newCall, contact: v})} placeholder="Phone/Email" />
+                <InputField label="Reason" type="select" options={absenceReasons} value={newCall.reason} onChange={(v) => setNewCall({...newCall, reason: v})} />
+                <button onClick={() => {
+                  if (newCall.studentRollNo && newCall.date && newCall.contact) {
+                    setCallingRecords([...callingRecords, { ...newCall, id: Date.now() }]);
+                    setNewCall({ studentRollNo: '', date: new Date().toISOString().split('T')[0], contact: '', reason: '', notes: '' });
+                  }
+                }} className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold mt-6">
+                  <Plus size={18} />
+                </button>
+              </div>
+              <InputField label="Notes" type="textarea" value={newCall.notes} onChange={(v) => setNewCall({...newCall, notes: v})} placeholder="Additional details..." className="mt-4" />
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-bold text-lg text-slate-700">Call Records ({callingRecords.length})</h4>
+              {callingRecords.length === 0 ? (
+                <p className="text-slate-500 text-center py-8">No call records yet</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {callingRecords.map((call, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded border">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-bold">Roll: {call.studentRollNo}</span> | <span className="text-sm text-slate-600">{call.date}</span>
+                          <br />
+                          <span className="text-sm"><strong>Contact:</strong> {call.contact}</span>
+                          <br />
+                          <span className="text-sm"><strong>Reason:</strong> <span className="bg-yellow-100 px-2 py-1 rounded text-yellow-800 font-semibold">{call.reason}</span></span>
+                          {call.notes && <div className="text-sm text-slate-600 mt-2"><strong>Notes:</strong> {call.notes}</div>}
+                        </div>
+                        <button onClick={() => setCallingRecords(callingRecords.filter((_, i) => i !== idx))} className="text-red-500 hover:bg-red-50 p-2 rounded">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 3: // Daily Reports & Analysis
+        return (
+          <div className="space-y-6">
+            <SectionHeader title="Daily Reports & Analysis" icon={Download} description="View attendance reports and statistics." />
+            
+            {submittedRecords.length === 0 ? (
+              <div className="text-center py-12 text-slate-500">
+                <UploadCloud size={48} className="mx-auto mb-4 opacity-30" />
+                <p>No attendance records submitted yet. Submit attendance from the Mark Attendance tab.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Summary Statistics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-green-50 p-4 rounded border border-green-200">
+                    <div className="text-xs text-green-600 font-semibold">Total Present</div>
+                    <div className="text-3xl font-bold text-green-700">
+                      {submittedRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'present').length || 0), 0)}
+                    </div>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded border border-red-200">
+                    <div className="text-xs text-red-600 font-semibold">Total Absent</div>
+                    <div className="text-3xl font-bold text-red-700">
+                      {submittedRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'absent').length || 0), 0)}
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+                    <div className="text-xs text-yellow-600 font-semibold">Leave</div>
+                    <div className="text-3xl font-bold text-yellow-700">
+                      {submittedRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'leave').length || 0), 0)}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded border border-purple-200">
+                    <div className="text-xs text-purple-600 font-semibold">Medical</div>
+                    <div className="text-3xl font-bold text-purple-700">
+                      {submittedRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'medical').length || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Student-wise Report */}
+                <div className="bg-white border rounded-lg p-6">
+                  <h4 className="font-bold text-lg text-slate-700 mb-4">Student-wise Attendance Record</h4>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {(() => {
+                      const studentMap = {};
+                      submittedRecords.forEach(record => {
+                        record.students?.forEach(student => {
+                          if (!studentMap[student.rollNo]) {
+                            studentMap[student.rollNo] = { name: student.name, rollNo: student.rollNo, records: [] };
+                          }
+                          studentMap[student.rollNo].records.push({ date: record.date, status: student.status, remarks: student.remarks });
+                        });
+                      });
+                      return Object.values(studentMap).map((student, idx) => (
+                        <div key={idx} className="p-3 bg-slate-50 rounded border cursor-pointer hover:bg-slate-100" onClick={() => setSelectedStudent(selectedStudent?.rollNo === student.rollNo ? null : student)}>
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-bold">{student.rollNo}</span> - {student.name}
+                              <div className="text-xs text-slate-500 mt-1">
+                                Present: <span className="text-green-600 font-bold">{student.records.filter(r => r.status === 'present').length}</span> |
+                                Absent: <span className="text-red-600 font-bold">{student.records.filter(r => r.status === 'absent').length}</span> |
+                                Leave: <span className="text-yellow-600 font-bold">{student.records.filter(r => r.status === 'leave').length}</span> |
+                                Medical: <span className="text-purple-600 font-bold">{student.records.filter(r => r.status === 'medical').length}</span>
+                              </div>
+                            </div>
+                            <span className="text-sm text-slate-600">{student.records.length} records</span>
+                          </div>
+                          {selectedStudent?.rollNo === student.rollNo && (
+                            <div className="mt-3 pt-3 border-t space-y-2">
+                              {student.records.map((rec, i) => (
+                                <div key={i} className="text-sm bg-white p-2 rounded">
+                                  <span className="font-semibold">{rec.date}</span> - 
+                                  <span className={`ml-2 font-bold ${
+                                    rec.status === 'present' ? 'text-green-600' :
+                                    rec.status === 'absent' ? 'text-red-600' :
+                                    rec.status === 'leave' ? 'text-yellow-600' : 'text-purple-600'
+                                  }`}>
+                                    {rec.status.toUpperCase()}
+                                  </span>
+                                  {rec.remarks && <span className="text-slate-600 ml-2">• {rec.remarks}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Daily Report */}
+                <div className="bg-white border rounded-lg p-6">
+                  <h4 className="font-bold text-lg text-slate-700 mb-4">Daily Attendance Summary</h4>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {submittedRecords.sort((a, b) => new Date(b.date) - new Date(a.date)).map((record, idx) => (
+                      <div key={idx} className="p-4 bg-slate-50 rounded border">
+                        <div className="flex justify-between items-center mb-2">
+                          <div>
+                            <span className="font-bold text-lg">{record.classInfo?.department || 'Unknown'} - {record.classInfo?.year || 'Unknown'}</span>
+                            <span className="text-slate-600 ml-4">📅 {record.date}</span>
+                            <span className="text-slate-600 ml-4">CC: {record.classInfo?.ccName || '-'}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-sm">
+                          <div className="bg-green-100 p-2 rounded text-center">
+                            <div className="text-xs text-green-700">Present</div>
+                            <div className="font-bold text-green-700">{record.students?.filter(s => s.status === 'present').length || 0}</div>
+                          </div>
+                          <div className="bg-red-100 p-2 rounded text-center">
+                            <div className="text-xs text-red-700">Absent</div>
+                            <div className="font-bold text-red-700">{record.students?.filter(s => s.status === 'absent').length || 0}</div>
+                          </div>
+                          <div className="bg-yellow-100 p-2 rounded text-center">
+                            <div className="text-xs text-yellow-700">Leave</div>
+                            <div className="font-bold text-yellow-700">{record.students?.filter(s => s.status === 'leave').length || 0}</div>
+                          </div>
+                          <div className="bg-purple-100 p-2 rounded text-center">
+                            <div className="text-xs text-purple-700">Medical</div>
+                            <div className="font-bold text-purple-700">{record.students?.filter(s => s.status === 'medical').length || 0}</div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-slate-600 mt-2">Total Strength: {record.classInfo?.totalStudents || 0}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       default: return null;
     }
   };
 
   const renderAdminView = () => (
-    <div className="p-6 md:p-10 max-w-6xl mx-auto">
+    <div className="p-6 md:p-10 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-slate-800">Admin Dashboard</h2>
-          <p className="text-slate-500">View and manage submitted attendance records.</p>
+          <h2 className="text-3xl font-bold text-slate-800">📊 Admin Dashboard</h2>
+          <p className="text-slate-500">Shri Siddheshwar Women's Polytechnic - Attendance Management System</p>
+          <p className="text-sm text-slate-400 mt-1">© All Rights Reserved - Chatake Innoworks</p>
         </div>
         <button onClick={() => setIsAdminView(false)} className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-300 flex items-center gap-2">
           <ArrowLeft size={16}/> Back to Entry
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 bg-white rounded-xl shadow-sm border p-4 h-[600px] overflow-y-auto">
-          <h3 className="font-bold text-slate-400 text-xs uppercase tracking-wider mb-4">Submitted Records</h3>
-          {submittedRecords.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">
-              <UploadCloud size={40} className="mx-auto mb-2 opacity-50"/>
-              <p>No records yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {submittedRecords.map((record) => (
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="md:col-span-1 bg-white rounded-xl shadow-sm border p-4 h-[700px] overflow-y-auto">
+          <h3 className="font-bold text-slate-400 text-xs uppercase tracking-wider mb-4">📋 Departments</h3>
+          <div className="space-y-2">
+            {departments.map((dept) => {
+              const deptRecords = submittedRecords.filter(r => r.classInfo?.department === dept);
+              return (
                 <button
-                  key={record.id}
-                  onClick={() => setSelectedRecord(record)}
-                  className={`w-full text-left p-4 rounded-lg border transition-all ${selectedRecord?.id === record.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-100 hover:bg-slate-50'}`}
+                  key={dept}
+                  onClick={() => setSelectedRecord(selectedRecord?.classInfo?.department === dept ? null : deptRecords[0])}
+                  className={`w-full text-left p-4 rounded-lg border transition-all ${selectedRecord?.classInfo?.department === dept ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:bg-slate-50'}`}
                 >
-                  <div className="font-bold text-slate-800">{record.classInfo?.className || 'Unknown Class'}</div>
-                  <div className="text-xs text-slate-500 mt-1">📅 {record.date}</div>
-                  <div className="text-xs text-slate-400 mt-1">CC: {record.classInfo?.ccName || '-'}</div>
-                  <div className="text-xs text-slate-400">📊 {record.students?.length || 0} students</div>
+                  <div className="font-bold text-slate-800">{dept}</div>
+                  <div className="text-xs text-slate-500 mt-1">📊 {deptRecords.length} records</div>
+                  {deptRecords.length > 0 && (
+                    <div className="text-xs mt-2 space-y-1">
+                      <div>✓ Present: <span className="text-green-600 font-bold">{deptRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'present').length || 0), 0)}</span></div>
+                      <div>✗ Absent: <span className="text-red-600 font-bold">{deptRecords.reduce((sum, r) => sum + (r.students?.filter(s => s.status === 'absent').length || 0), 0)}</span></div>
+                    </div>
+                  )}
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
-        <div className="md:col-span-2 bg-white rounded-xl shadow-sm border p-6 h-[600px] overflow-y-auto">
+        <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border p-6 h-[700px] overflow-y-auto">
           {selectedRecord ? (
             <div className="space-y-6">
               <div className="border-b pb-4">
-                <h2 className="text-2xl font-bold text-slate-800">{selectedRecord.classInfo?.className}</h2>
-                <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                <h2 className="text-2xl font-bold text-slate-800">{selectedRecord.classInfo?.department} - {selectedRecord.classInfo?.year}</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
                   <div><span className="text-slate-500">Date:</span> <span className="font-semibold">{selectedRecord.date}</span></div>
                   <div><span className="text-slate-500">CC:</span> <span className="font-semibold">{selectedRecord.classInfo?.ccName}</span></div>
-                  <div><span className="text-slate-500">Total Students:</span> <span className="font-semibold">{selectedRecord.classInfo?.totalStudents}</span></div>
-                  <div><span className="text-slate-500">Semester:</span> <span className="font-semibold">{selectedRecord.classInfo?.semester}</span></div>
+                  <div><span className="text-slate-500">Total Strength:</span> <span className="font-semibold">{selectedRecord.classInfo?.totalStudents}</span></div>
+                  <div><span className="text-slate-500">Recorded:</span> <span className="font-semibold">{selectedRecord.students?.length}</span></div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-green-50 p-3 rounded border border-green-200">
-                  <div className="text-xs text-green-600">Present</div>
-                  <div className="font-bold text-xl text-green-700">{selectedRecord.students?.filter(s => s.status === 'present').length || 0}</div>
+              <div className="grid grid-cols-4 gap-2">
+                <div className="bg-green-50 p-3 rounded border border-green-200 text-center">
+                  <div className="text-xs text-green-600 font-semibold">Present</div>
+                  <div className="font-bold text-2xl text-green-700">{selectedRecord.students?.filter(s => s.status === 'present').length || 0}</div>
                 </div>
-                <div className="bg-red-50 p-3 rounded border border-red-200">
-                  <div className="text-xs text-red-600">Absent</div>
-                  <div className="font-bold text-xl text-red-700">{selectedRecord.students?.filter(s => s.status === 'absent').length || 0}</div>
+                <div className="bg-red-50 p-3 rounded border border-red-200 text-center">
+                  <div className="text-xs text-red-600 font-semibold">Absent</div>
+                  <div className="font-bold text-2xl text-red-700">{selectedRecord.students?.filter(s => s.status === 'absent').length || 0}</div>
                 </div>
-                <div className="bg-yellow-50 p-3 rounded border border-yellow-200">
-                  <div className="text-xs text-yellow-600">Leave/Medical</div>
-                  <div className="font-bold text-xl text-yellow-700">{selectedRecord.students?.filter(s => ['leave', 'medical'].includes(s.status)).length || 0}</div>
+                <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-center">
+                  <div className="text-xs text-yellow-600 font-semibold">Leave</div>
+                  <div className="font-bold text-2xl text-yellow-700">{selectedRecord.students?.filter(s => s.status === 'leave').length || 0}</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded border border-purple-200 text-center">
+                  <div className="text-xs text-purple-600 font-semibold">Medical</div>
+                  <div className="font-bold text-2xl text-purple-700">{selectedRecord.students?.filter(s => s.status === 'medical').length || 0}</div>
                 </div>
               </div>
 
               <div>
-                <h4 className="font-bold text-slate-700 mb-2">Student Details</h4>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <h4 className="font-bold text-slate-700 mb-3">📋 Student Details</h4>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
                   {selectedRecord.students?.map((student, idx) => (
-                    <div key={idx} className="text-sm p-2 bg-slate-50 rounded flex justify-between items-start">
+                    <div key={idx} className="text-sm p-3 bg-slate-50 rounded flex justify-between items-start">
                       <div>
-                        <span className="font-semibold">{student.rollNo}</span> - {student.name}
+                        <span className="font-semibold text-blue-600">Roll: {student.rollNo}</span> - {student.name}
                         <br/>
-                        <span className={`text-xs font-semibold ${
-                          student.status === 'present' ? 'text-green-600' :
-                          student.status === 'absent' ? 'text-red-600' : 'text-yellow-600'
-                        }`}>{student.status?.toUpperCase()}</span>
-                        {student.remarks && <span className="text-xs text-slate-500"> • {student.remarks}</span>}
+                        <span className={`inline-block mt-1 font-bold px-2 py-1 rounded text-xs ${
+                          student.status === 'present' ? 'bg-green-100 text-green-700' :
+                          student.status === 'absent' ? 'bg-red-100 text-red-700' :
+                          student.status === 'leave' ? 'bg-yellow-100 text-yellow-700' : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {student.status?.toUpperCase()}
+                        </span>
+                        {student.remarks && <span className="text-slate-600 ml-2 text-xs">• {student.remarks}</span>}
                       </div>
                     </div>
                   ))}
@@ -466,7 +663,7 @@ export default function App() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
               <Eye size={48} className="mb-4 opacity-30" />
-              <p>Select a record to view details.</p>
+              <p>Select a department to view attendance details.</p>
             </div>
           )}
         </div>
@@ -481,7 +678,7 @@ export default function App() {
           {renderAdminView()}
         </div>
         <footer className="bg-white border-t border-slate-200 px-6 py-3 text-center text-xs text-slate-500">
-          Attendance Tracker • © {new Date().getFullYear()} All rights reserved
+          © {new Date().getFullYear()} Shri Siddheshwar Women's Polytechnic | Developed by <span className="font-semibold text-blue-600">Chatake Innoworks</span>
         </footer>
       </div>
     );
@@ -550,8 +747,9 @@ export default function App() {
         <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed md:relative md:translate-x-0 z-40 w-72 bg-white border-r border-slate-200 h-full transition-transform duration-300 flex flex-col shadow-xl md:shadow-none`}>
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <div>
-              <h1 className="font-bold text-xl text-blue-900">Attendance Tracker</h1>
-              <p className="text-xs text-slate-400">2024-25</p>
+              <h1 className="font-bold text-xl text-blue-900">📚 Attendance Tracker</h1>
+              <p className="text-xs text-slate-400">Shri Siddheshwar Women's Polytechnic</p>
+              <p className="text-xs text-slate-500">© Chatake Innoworks</p>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-400"><X /></button>
           </div>
