@@ -1,5 +1,6 @@
-{
-  "build": {
-    "functions": "functions/"
-  }
-}
+[build]
+  publish = "build"
+  command = "npm run build"
+
+[build.environment]
+  CI = "false"
