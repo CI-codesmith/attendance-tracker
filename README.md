@@ -1,10 +1,46 @@
-# Getting Started with Create React App
+# Attendance Tracker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern web application for marking and managing student attendance with Firebase integration.
+
+## Features
+
+✨ **Quick Attendance Marking**
+- Mark attendance for entire class in one place
+- Support for multiple statuses: Present, Absent, Leave, Medical
+- Add optional remarks for each student
+
+📊 **Admin Dashboard**
+- View all submitted attendance records
+- Summary statistics (Present, Absent, Leave counts)
+- Filter by date and class
+
+🎓 **Class Management**
+- Select from predefined classes (SE/TE/BE - Comp/IT/Extc)
+- Track class coordinators and student counts
+- Multiple semesters support
+
+💾 **Data Management**
+- Auto-save to localStorage for drafts
+- Firebase Firestore integration for cloud backup
+- Export attendance to JSON
+
+🔐 **Secure Access**
+- Admin dashboard protected with password (admin2025)
+- Role-based access control
+- Anonymous authentication with Firebase
+
+## Quick Start
+
+### Installation
+
+```bash
+npm install
+npm start
+```
+
+The app opens at `http://localhost:3000` in demo mode.
 
 ## Available Scripts
-
-In the project directory, you can run:
 
 ### `npm start`
 
